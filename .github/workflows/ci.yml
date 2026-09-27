@@ -1,0 +1,22 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Abhängigkeiten installieren
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Statische Prüfung
+        run: python -m pyflakes main.py cnctd_stock tests tools
+      - name: Tests
+        run: python -m pytest -q

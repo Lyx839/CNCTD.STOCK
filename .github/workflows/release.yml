@@ -1,0 +1,52 @@
+name: Release
+
+# Neues Release: Version in cnctd_stock/__init__.py, version_info.txt und installer/cnctd_stock.iss
+# anheben, CHANGELOG ergänzen, dann einen Tag pushen:  git tag v1.3.0 && git push origin v1.3.0
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Abhängigkeiten installieren
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Tests
+        run: python -m pytest -q
+      - name: Icon und UI-Grafiken erzeugen
+        run: |
+          python tools/make_icon.py
+          python tools/make_ui_assets.py
+      - name: EXE bauen (PyInstaller)
+        run: >
+          python -m PyInstaller --noconfirm --clean --noconsole --onefile
+          --name "CNCTD.STOCK" --icon "assets\cnctd_stock.ico"
+          --version-file "version_info.txt" --add-data "assets;assets" main.py
+      - name: Selbsttest der EXE
+        shell: pwsh
+        run: |
+          $pdf = "$env:RUNNER_TEMP\selftest.pdf"
+          $p = Start-Process -FilePath dist\CNCTD.STOCK.exe -ArgumentList "--selftest", $pdf -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $pdf)) { throw "Selbsttest fehlgeschlagen" }
+      - name: Installer bauen (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\cnctd_stock.iss
+      - name: Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/CNCTD.STOCK.exe
+            installer/Output/CNCTD.STOCK_Setup.exe
+          body_path: CHANGELOG.md

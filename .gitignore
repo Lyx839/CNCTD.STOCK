@@ -1,0 +1,20 @@
+# Python / Umgebung
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Build-Ergebnisse (werden über GitHub Releases verteilt)
+build/
+dist/
+installer/Output/
+*.spec
+
+# Laufzeitdaten – enthalten Geschäftsdaten und dürfen nie ins Repository
+data/
+EXPORT/
+*.db
+*.db-journal
+
+# Lokale Notizen
+PROMPT.txt
